@@ -1,0 +1,53 @@
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+    background-color: #0e0f29;
+    gap: 1rem;
+}
+
+.block{
+    width: 10rem;
+    height: 10rem;
+    background-color: #002791;
+    border-radius: 10px;
+    position: absolute;
+}
+
+#field{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-flow: row wrap;
+    width: 30rem;
+    background: #0e0f29;
+    position: absolute;
+    top: 9rem;
+}
+
+#field > div{
+    box-shadow: #1b1b67 0 0 10px 1px;
+    width: 10rem;
+    height: 10rem;
+}
+
+.block.busy{
+}
+
+#block-container{
+    width: 30rem;
+    height: 10rem;
+    background: #0e0f29;
+    box-shadow: #1b1b67 0 0 10px 1px;
+    display: flex;
+    position: absolute;
+    bottom: 4rem;
+}
+
+.block.on-place{
+    width: 5rem;
+    height: 5rem;
+}
