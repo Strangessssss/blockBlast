@@ -1,7 +1,10 @@
 
 let bgColors = ["#002791", "#187100", "#910000", "#cbda00"]
 
-let matrix = [0,0,0,0,0,0,0,0,0]
+let matrix = [null,null,null,null,null,null,null,null,null]
+
+let score = 0;
+let scoreDiv = $("#score")
 
 let cells = $("#field");
 let blocks = $(".block");
@@ -13,6 +16,40 @@ let leftBlocks;
 $(function () {
     updateBlocks();
 });
+
+function checkIfStrike() {
+    for (let i = 0; i <= 6; i+=3) {
+        let outOnes = []
+        for (let j = 0; j < 3; j++) {
+            if (matrix[i+j] != null) {
+                outOnes.push(i + j);
+            }
+        }
+        if (outOnes.length === 3) {
+            for (let j = 0; j < 3; j++) {
+                matrix[outOnes[j]].remove();
+                matrix[outOnes[j]] = null;
+                score += 100;
+            }
+        }
+    }
+    for (let i = 0; i < 3; i++) {
+        let outOnes = []
+        for (let j = 0; j <= 6; j+=3) {
+            if (matrix[i+j] !== null) {
+                outOnes.push(i + j);
+            }
+        }
+        if (outOnes.length === 3) {
+            for (let j = 0; j < 3; j++) {
+                matrix[outOnes[j]].remove();
+                matrix[outOnes[j]] = null;
+                score += 100;
+            }
+        }
+    }
+    scoreDiv.text(score.toString());
+}
 
 function updateBlocks() {
     leftBlocks = blockCount;
@@ -58,16 +95,17 @@ function dragElement(draggableElem) {
         let elems = cells.children();
         for (let i = 0; i < elems.length; i++) {
             const cell = $(elems[i]);
-            if (Math.abs(cell.offset().left - draggableElem.offset().left) <= maxDistance && Math.abs(cell.offset().top - draggableElem.offset().top) <= maxDistance && matrix[i] !== 1) {
+            if (Math.abs(cell.offset().left - draggableElem.offset().left) <= maxDistance && Math.abs(cell.offset().top - draggableElem.offset().top) <= maxDistance && matrix[i] === null) {
                 draggableElem.css("left", cell.offset().left + "px");
                 draggableElem.css("top", cell.offset().top + "px");
                 draggableElem.addClass("busy")
-                matrix[i] = 1;
+                matrix[i] = draggableElem;
                 draggableElem.off("mousedown");
                 leftBlocks--;
                 if (leftBlocks === 0) {
                     updateBlocks();
                 }
+                checkIfStrike();
                 break;
             }
         }

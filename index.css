@@ -34,7 +34,14 @@ body{
     height: 10rem;
 }
 
-.block.busy{
+#score{
+    position: absolute;
+    z-index: 99;
+    width: 10rem;
+    height: 5rem;
+    color: white;
+    top: 5rem;
+    text-align: center;
 }
 
 #block-container{
