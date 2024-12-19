@@ -9,13 +9,13 @@ body{
     align-items: center;
 }
 
-.block{
+.element{
     position: absolute;
     display: grid;
     grid-template-columns: 1fr 1fr;
 }
 
-.block > div{
+.element > div{
     width: 10rem;
     height: 10rem;
     background-color: #002791;

@@ -1,6 +1,16 @@
 const maxDistance = 50;
 
-let bgColors = ["#002791", "#187100", "#910000", "#cbda00"]
+let bgColors = [
+    ["#002791", "#001b60", "#2f5fdc"],
+    ["#187100", "#155000", "#4dca23"],
+    ["#910000", "#590000", "#d82a2a"],
+    ["#cbda00", "#555c00", "#f3ff37"]
+]
+
+const disappearTo = ["L", "R"];
+
+const usualBoxShadow = "0 0 0 3px"
+const strikeBoxShadow = "0 0 10px 2px"
 
 let matrix = [null,null,null,null,null,null,null,null,null]
 
@@ -8,50 +18,49 @@ let score = 0;
 let scoreDiv = $("#score")
 
 let cells = $("#field > div");
-let blocks = $(".block");
+let elements = $(".element");
 
 const blockCount = 3;
 let leftBlocks;
 
-dragElement($(".trio"))
+dragElement($("#trio"))
 
 $(function () {
     updateBlocks();
-    createTetrimino("I")
 });
 
 function updateBlocks() {
     leftBlocks = blockCount;
     for (let i = 0; i < 3; i++) {
-        $("body").append("<div class=\"block\"></div>")
+        $("body").append("<div class=\"element\"></div>")
     }
-    blocks = $(".block").not(".busy");
+    elements = $(".element").not(".busy");
     let container =  $("#block-container")
-    for (let i = 0; i < blocks.length; i++) {
+    for (let i = 0; i < elements.length; i++) {
         let left = (container.offset().left + container.outerWidth() / 3 * i) + container.outerWidth() / 6 / 2 + "px";
         let top = container.offset().top + container.outerWidth() / 6 / 2 + "px";
-        blocks.addClass("on-place");
-        blocks.eq(i).css("top", top);
-        blocks.eq(i).css("left", left);
-        blocks.eq(i).attr("place-left", left);
-        blocks.eq(i).attr("place-top", top);
+        elements.addClass("on-place");
+        elements.eq(i).css("top", top);
+        elements.eq(i).css("left", left);
+        elements.eq(i).attr("place-left", left);
+        elements.eq(i).attr("place-top", top);
         let colorIndex = Math.floor(Math.random() * bgColors.length);
-        blocks.eq(i).attr("color-index", colorIndex);
-        blocks.eq(i).css("background-color", bgColors[colorIndex]);
+        elements.eq(i).attr("color-index", colorIndex);
+        elements.eq(i).css("background-color", bgColors[colorIndex][0]);
+        elements.eq(i).css("box-shadow", `${bgColors[colorIndex][1]} ${usualBoxShadow}`);
     }
-    for (let i = 0; i < blocks.length; i++) {
-        dragElement(blocks.eq(i));
+    for (let i = 0; i < elements.length; i++) {
+        dragElement(elements.eq(i));
     }
 }
 
 function dragElement(draggableElem) {
     draggableElem.on("mousedown", function(e) {dragMouseDown(e)});
-    console.log($(draggableElem));
-
 
     function dragMouseDown() {
         draggableElem.on("mousemove", function(e) {replaceElem(e)});
         draggableElem.on("mouseup", function() {dragOff()});
+
     }
 
     function replaceElem(e) {
@@ -60,7 +69,6 @@ function dragElement(draggableElem) {
             let cell = $(elems[i]);
             cell.css("background-color", "transparent");
         }
-
         let nearest = getNearest(draggableElem)
         showStrikes(nearest, draggableElem);
         if (nearest[0] !== null) {
@@ -103,7 +111,6 @@ function getNearest(elem){
             return [cell, i];
         }
     }
-    console.log(1234);
     return [null, null];
 }
 
@@ -127,20 +134,19 @@ function getAllStrikes() {
 
 function checkIfStrike() {
     let strikes;
-
     do {
-        // Detect all strikes
         strikes = getAllStrikes();
-
-        // Clear all detected strikes
         strikes.forEach(strike => {
             strike.forEach(idx => {
                 if (matrix[idx] !== null) {
-                    matrix[idx].remove();
+                    matrix[idx].css("animation", `${disappearTo[Math.floor(Math.random() * disappearTo.length)]} 0.4s linear 1`);
+                    matrix[idx].on("animationend", function() {
+                        $(this).remove();
+                    })
                     matrix[idx] = null;
                 }
             });
-            score += 10; // Increment score for each strike
+            score += 10;
         });
 
     } while (strikes.length > 0);
@@ -150,9 +156,12 @@ function checkIfStrike() {
 
 
 function showStrikes(nearest, draggableElem) {
+    draggableElem.css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][1]} ${usualBoxShadow}`);
+    draggableElem.css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][0]);
     for (let i = 0; i < matrix.length; i++) {
         if (matrix[i] !== null) {
-            matrix[i].css("background-color", bgColors[matrix[i].attr("color-index")] );
+            matrix[i].css("background-color", bgColors[matrix[i].attr("color-index")][0] );
+            matrix[i].css("box-shadow", `${bgColors[parseInt(matrix[i].attr("color-index"))][1]} ${usualBoxShadow}`);
         }
     }
 
@@ -172,9 +181,12 @@ function showStrikes(nearest, draggableElem) {
 
         potentialLines.forEach(line => {
             if (line.includes(cellId) && line.filter(idx => matrix[idx] !== null).length >= 2) {
-                line.forEach(idx => {
-                    if (matrix[idx]) {
-                        matrix[idx].css("background-color", draggableElem.css("background-color"));
+                draggableElem.css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
+                draggableElem.css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
+                line.forEach(i => {
+                    if (matrix[i]) {
+                        matrix[i].css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
+                        matrix[i].css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
                     }
                 });
             }
