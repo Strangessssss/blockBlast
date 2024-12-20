@@ -7,12 +7,12 @@ let bgColors = [
     ["#cbda00", "#555c00", "#f3ff37"]
 ]
 
-const disappearTo = ["L", "R"];
+const disappearTo = ["L", "R", "U"];
 
 const usualBoxShadow = "0 0 0 3px"
 const strikeBoxShadow = "0 0 10px 2px"
 
-let matrix = [null,null,null,null,null,null,null,null,null]
+let matrix = [0,0,0,0,0,0,0,0,0]
 
 let score = 0;
 let scoreDiv = $("#score")
@@ -23,8 +23,6 @@ let elements = $(".element");
 const blockCount = 3;
 let leftBlocks;
 
-dragElement($("#trio"))
-
 $(function () {
     updateBlocks();
 });
@@ -32,9 +30,9 @@ $(function () {
 function updateBlocks() {
     leftBlocks = blockCount;
     for (let i = 0; i < 3; i++) {
-        $("body").append("<div class=\"element\"></div>")
+        $("body").append("<div class=\"element square\"><div></div></div>")
     }
-    elements = $(".element").not(".busy");
+    elements = $(".element");
     let container =  $("#block-container")
     for (let i = 0; i < elements.length; i++) {
         let left = (container.offset().left + container.outerWidth() / 3 * i) + container.outerWidth() / 6 / 2 + "px";
@@ -46,8 +44,8 @@ function updateBlocks() {
         elements.eq(i).attr("place-top", top);
         let colorIndex = Math.floor(Math.random() * bgColors.length);
         elements.eq(i).attr("color-index", colorIndex);
-        elements.eq(i).css("background-color", bgColors[colorIndex][0]);
-        elements.eq(i).css("box-shadow", `${bgColors[colorIndex][1]} ${usualBoxShadow}`);
+        elements.eq(i).children().css("background-color", bgColors[colorIndex][0]);
+        elements.eq(i).children().css("box-shadow", `${bgColors[colorIndex][1]} ${usualBoxShadow}`);
     }
     for (let i = 0; i < elements.length; i++) {
         dragElement(elements.eq(i));
@@ -60,7 +58,6 @@ function dragElement(draggableElem) {
     function dragMouseDown() {
         draggableElem.on("mousemove", function(e) {replaceElem(e)});
         draggableElem.on("mouseup", function() {dragOff()});
-
     }
 
     function replaceElem(e) {
@@ -71,8 +68,8 @@ function dragElement(draggableElem) {
         }
         let nearest = getNearest(draggableElem)
         showStrikes(nearest, draggableElem);
-        if (nearest[0] !== null) {
-            nearest[0].css("background-color", draggableElem.css("background-color"));
+        if (nearest[0] !== null && matrix[nearest[1]] === 0) {
+            nearest[0].css("background-color", bgColors[draggableElem.attr("color-index")][0]);
         }
         draggableElem.removeClass("on-place")
         draggableElem.css("top", e.clientY - draggableElem.outerHeight() / 2);
@@ -82,20 +79,21 @@ function dragElement(draggableElem) {
     function dragOff() {
         draggableElem.off("mousemove")
         let [cell, mIndex] = getNearest(draggableElem);
-        if (cell !== null) {
-            draggableElem.css("left", cell.offset().left + "px");
-            draggableElem.css("top", cell.offset().top + "px");
-            draggableElem.addClass("busy")
-            draggableElem.removeClass("on-place")
-            $(cell).css("background-color", "transparent");
-            matrix[mIndex] = draggableElem;
-            draggableElem.off("mouseup");
-            draggableElem.off("mousedown");
+        if (cell !== null && matrix[mIndex] === 0) {
+            cell = $(cell);
+            const colorIndex = draggableElem.attr("color-index");
+            cell.children().attr("color-index", colorIndex);
+            cell.children().css("background-color", bgColors[colorIndex][0]);
+            cell.children().css("box-shadow", `${bgColors[colorIndex][1]} ${usualBoxShadow}`);
+            cell.css("opacity", '1');
+            cell.css("background-color", 'transparent');
+            draggableElem.remove()
+            matrix[mIndex] = 1;
             leftBlocks--;
             if (leftBlocks === 0) updateBlocks();
-            checkIfStrike();
+            strike();
         }
-        if (cell === null && !$(draggableElem).hasClass("busy")) {
+        else {
             draggableElem.css("left", draggableElem.attr("place-left"));
             draggableElem.css("top", draggableElem.attr("place-top"));
             draggableElem.addClass("on-place");
@@ -107,7 +105,7 @@ function getNearest(elem){
     let elems = cells;
     for (let i = 0; i < elems.length; i++) {
         const cell = $(elems[i]);
-        if (Math.abs(cell.offset().left - elem.offset().left) <= maxDistance && Math.abs(cell.offset().top - elem.offset().top) <= maxDistance && matrix[i] === null) {
+        if (Math.abs(cell.offset().left - elem.offset().left) <= maxDistance && Math.abs(cell.offset().top - elem.offset().top) <= maxDistance) {
             return [cell, i];
         }
     }
@@ -119,49 +117,46 @@ function getAllStrikes() {
     const strikes = [];
     const horizontalLines = [[0, 1, 2], [3, 4, 5], [6, 7, 8]];
     horizontalLines.forEach(line => {
-        if (line.every(idx => matrix[idx] !== null)) {
+        if (line.every(idx => matrix[idx] === 1)) {
             strikes.push(line);
         }
     });
     const verticalLines = [[0, 3, 6], [1, 4, 7], [2, 5, 8]];
     verticalLines.forEach(line => {
-        if (line.every(idx => matrix[idx] !== null)) {
+        if (line.every(idx => matrix[idx] === 1)) {
             strikes.push(line);
         }
     });
     return strikes;
 }
 
-function checkIfStrike() {
-    let strikes;
-    do {
+function strike() {
+    let strikes = getAllStrikes();
+    while (strikes.length !== 0){
         strikes = getAllStrikes();
         strikes.forEach(strike => {
             strike.forEach(idx => {
-                if (matrix[idx] !== null) {
-                    matrix[idx].css("animation", `${disappearTo[Math.floor(Math.random() * disappearTo.length)]} 0.4s linear 1`);
-                    matrix[idx].on("animationend", function() {
-                        $(this).remove();
+                if (matrix[idx] === 1) {
+                    cells.eq(idx).children().css("animation", `${disappearTo[Math.floor(Math.random() * disappearTo.length)]} 0.4s linear 1`);
+                    cells.eq(idx).children().on("animationend", function () {
+                        cells.eq(idx).children().css("background-color", "transparent");
+                        cells.eq(idx).children().css("box-shadow", "");
                     })
-                    matrix[idx] = null;
+                    matrix[idx] = 0;
                 }
             });
-            score += 10;
         });
-
-    } while (strikes.length > 0);
-
-    scoreDiv.text(score.toString());
+    }
 }
 
 
 function showStrikes(nearest, draggableElem) {
-    draggableElem.css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][1]} ${usualBoxShadow}`);
-    draggableElem.css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][0]);
+    draggableElem.children().css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][1]} ${usualBoxShadow}`);
+    draggableElem.children().css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][0]);
     for (let i = 0; i < matrix.length; i++) {
-        if (matrix[i] !== null) {
-            matrix[i].css("background-color", bgColors[matrix[i].attr("color-index")][0] );
-            matrix[i].css("box-shadow", `${bgColors[parseInt(matrix[i].attr("color-index"))][1]} ${usualBoxShadow}`);
+        if (matrix[i] === 1) {
+            cells.eq(i).children().css("background-color", bgColors[cells.eq(i).children().attr("color-index")][0]);
+            cells.eq(i).children().css("box-shadow", `${bgColors[parseInt(cells.eq(i).children().attr("color-index"))][1]} ${usualBoxShadow}`);
         }
     }
 
@@ -180,13 +175,14 @@ function showStrikes(nearest, draggableElem) {
         ];
 
         potentialLines.forEach(line => {
-            if (line.includes(cellId) && line.filter(idx => matrix[idx] !== null).length >= 2) {
-                draggableElem.css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
-                draggableElem.css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
+            if (line.includes(cellId) && line.filter(idx => matrix[idx] === 1).length >= 2) {
+                console.log()
+                draggableElem.children().css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
+                draggableElem.children().css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
                 line.forEach(i => {
                     if (matrix[i]) {
-                        matrix[i].css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
-                        matrix[i].css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
+                        cells.eq(i).children().css("background-color", bgColors[parseInt(draggableElem.attr("color-index"))][2]);
+                        cells.eq(i).children().css("box-shadow", `${bgColors[parseInt(draggableElem.attr("color-index"))][2]} ${strikeBoxShadow}`);
                     }
                 });
             }
